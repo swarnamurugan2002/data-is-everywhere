@@ -1,0 +1,705 @@
+<title>Data Is Everywhere</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600;700&family=Kalam:wght@400;700&display=swap">
+<style>
+/* Layout: a classroom whiteboard on grid paper. Left rail = the lesson's sections; right = one board at a time, with click-through traces. */
+:root{
+  --board:#F6F8FA; --grid:#E6EBF0;
+  --panel:#FFFFFF; --edge:#D6DDE4;
+  --ink:#1F2933; --muted:#5B6672;
+  --rail:#EEF2F5; --rail-edge:#DCE3E9;
+  --blue:#1D4ED8; --blue-bg:#E3EBFF;
+  --purple:#6D28D9; --purple-bg:#EFE7FF;
+  --orange:#C2410C; --orange-bg:#FDEBDD;
+  --green:#15803D; --green-bg:#E2F5E8;
+  --red:#C2261D; --red-bg:#FCE4E2;
+  --marker:#FFF1B8; --marker-edge:#E8C547;
+  --mono-bg:#F3F5F7;
+  --line-a:#7C8A99; --line-b:#AEB8C3;
+  --font-hand:"Kalam","Comic Sans MS","Segoe Print",cursive;
+  --font-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --font-code:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --board:#12171C; --grid:#1B232B; --panel:#1A2128; --edge:#2E3842;
+    --ink:#E6EAEE; --muted:#9AA6B2; --rail:#0F1418; --rail-edge:#242D35;
+    --blue:#86A8FF; --blue-bg:#1F2E52; --purple:#BDA2FF; --purple-bg:#2C2248;
+    --orange:#FFA466; --orange-bg:#4A2A14; --green:#5BD98A; --green-bg:#16351F;
+    --red:#FF8A80; --red-bg:#4A1D1D; --marker:#3D3615; --marker-edge:#8A7420;
+    --mono-bg:#141A20; --line-a:#8E9BA8; --line-b:#5F6B77;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --board:#12171C; --grid:#1B232B; --panel:#1A2128; --edge:#2E3842;
+  --ink:#E6EAEE; --muted:#9AA6B2; --rail:#0F1418; --rail-edge:#242D35;
+  --blue:#86A8FF; --blue-bg:#1F2E52; --purple:#BDA2FF; --purple-bg:#2C2248;
+  --orange:#FFA466; --orange-bg:#4A2A14; --green:#5BD98A; --green-bg:#16351F;
+  --red:#FF8A80; --red-bg:#4A1D1D; --marker:#3D3615; --marker-edge:#8A7420;
+  --mono-bg:#141A20; --line-a:#8E9BA8; --line-b:#5F6B77;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--board);color:var(--ink);font-family:var(--font-body);font-size:18px;line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+a{color:var(--blue)}
+.app{display:flex;min-height:100%}
+
+/* rail */
+.rail{width:270px;flex:none;background:var(--rail);border-right:1px solid var(--rail-edge);padding:18px 12px 24px;position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto}
+.rail-title{font-family:var(--font-hand);font-weight:700;font-size:1.5rem;line-height:1.1;padding:2px 8px;color:var(--blue)}
+.rail-sub{font-size:.78rem;color:var(--muted);padding:2px 8px 10px}
+.rail-group{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 8px 4px}
+.rail-item{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;border:none;background:none;font-family:inherit;font-size:.9rem;color:var(--ink);padding:7px 10px;border-radius:8px;cursor:pointer;line-height:1.3}
+.rail-item:hover{background:var(--rail-edge)}
+.rail-item.active{background:var(--blue-bg);color:var(--blue);font-weight:700}
+.rail-item .t{font-family:var(--font-code);font-size:.7rem;color:var(--muted);white-space:nowrap;align-self:center}
+.rail-item.active .t{color:var(--blue)}
+.rail-keys{font-size:.74rem;color:var(--muted);padding:14px 8px 0;line-height:1.6}
+kbd{font-family:var(--font-code);font-size:.72rem;border:1px solid var(--edge);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--panel);color:var(--ink)}
+
+/* stage */
+.stage{flex:1;min-width:0;padding-block:26px 70px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.stage-inner{max-width:1080px;margin:0 auto}
+section[data-sec]{display:none}
+section[data-sec].show{display:block}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);margin:0 0 4px}
+h1.sec-title{font-family:var(--font-hand);font-weight:700;font-size:clamp(1.9rem,4.4vw,2.7rem);line-height:1.1;margin:0 0 12px;color:var(--blue);text-wrap:balance}
+.lede{font-size:1.08rem;color:var(--muted);margin:0 0 18px;max-width:70ch}
+.panel{background:var(--panel);border:1.5px solid var(--edge);border-radius:12px;padding:16px clamp(14px,3vw,22px);margin-bottom:16px;min-width:0}
+.panel h4,.label{font-family:var(--font-hand);font-weight:700;font-size:1.2rem;color:var(--muted);margin:0 0 6px}
+.panel p{margin:0 0 8px}
+.panel p:last-child{margin-bottom:0}
+.panel ul,.panel ol{margin:0;padding-left:22px}
+.panel li{margin-bottom:5px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:var(--panel);border:1.5px solid var(--edge);border-radius:12px;padding:14px 16px;min-width:0}
+.card h3{margin:0 0 4px;font-size:1.08rem}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+.big-q{font-family:var(--font-hand);font-weight:700;font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;color:var(--ink);margin:4px 0}
+.hand{font-family:var(--font-hand);font-weight:700}
+.pill{display:inline-block;font-weight:700;font-size:.82rem;padding:3px 12px;border-radius:999px;border:1.5px solid currentColor}
+.mono{font-family:var(--font-code)}
+code{font-family:var(--font-code);background:var(--mono-bg);border:1px solid var(--edge);border-radius:5px;padding:.05em .35em;font-size:.86em}
+.tbl-wrap{overflow-x:auto}
+table.data{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
+table.data th{text-align:left;font-weight:700;padding:6px 10px;border-bottom:2px solid var(--ink);white-space:nowrap}
+table.data td{padding:6px 10px;border-bottom:1px solid var(--edge);font-family:var(--font-code);font-size:.9rem;white-space:nowrap}
+table.data td.num,table.data th.num{text-align:right}
+tr.new td{background:var(--marker)}
+tr.bad td{background:var(--red-bg);color:var(--red)}
+tr.fixed td{background:var(--green-bg);color:var(--green)}
+tr.gone td{text-decoration:line-through;color:var(--muted)}
+table.data td.txt{font-family:var(--font-body);white-space:normal;font-size:.95rem}
+td.hl{background:var(--orange-bg);color:var(--orange);font-weight:700}
+.tag{font-family:var(--font-body);font-size:.72rem;font-weight:700;padding:1px 8px;border-radius:999px;border:1.5px solid currentColor;margin-left:6px;white-space:nowrap}
+
+/* stage colors for the pipeline */
+.s0{--c:var(--blue);--cbg:var(--blue-bg)}
+.s1{--c:var(--purple);--cbg:var(--purple-bg)}
+.s2{--c:var(--orange);--cbg:var(--orange-bg)}
+.s3{--c:var(--green);--cbg:var(--green-bg)}
+.s4{--c:var(--red);--cbg:var(--red-bg)}
+.pipe{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.pipe .st{flex:1 1 120px;display:flex;align-items:center;gap:8px;border:2px solid var(--edge);border-radius:10px;padding:8px 12px;background:var(--panel);color:var(--muted);font-weight:700;font-size:.95rem;position:relative}
+.pipe .st .n{font-family:var(--font-code);font-size:.8rem;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid currentColor;flex:none}
+.pipe .st.on{border-color:var(--c);background:var(--cbg);color:var(--c)}
+.pipe .st.done{color:var(--c)}
+.pipe .st.done .n{background:var(--c);color:var(--panel);border-color:var(--c)}
+.pipe-static .st{color:var(--c);border-color:var(--c);background:var(--cbg)}
+
+/* stepper */
+.viz{background:var(--panel);border:1.5px solid var(--edge);border-radius:14px;padding:16px clamp(12px,3vw,22px);margin-bottom:16px}
+.viz-top{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin-bottom:10px}
+.step-badge{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:4px 12px;border-radius:999px;background:var(--blue-bg);color:var(--blue)}
+.work{min-height:300px}
+.notebar{margin-top:14px;border:2px solid var(--ink);border-radius:12px;padding:10px 16px;display:flex;gap:14px;align-items:baseline;background:var(--panel)}
+.notebar .label{margin:0;flex:none}
+.note{font-size:1.18rem;line-height:1.4;min-height:1.4em}
+.viz-controls{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:.92rem;font-weight:700;cursor:pointer;border:2px solid var(--ink);background:var(--panel);color:var(--ink);padding:7px 14px;border-radius:10px}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--panel)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.rail-item:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+.step-count{font-family:var(--font-code);font-size:.85rem;color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+.progress{height:5px;background:var(--edge);border-radius:999px;overflow:hidden;margin-top:10px}
+.progress div{height:100%;background:var(--blue);width:0;transition:width .2s}
+
+/* pieces inside traces */
+.qcard{border:2px dashed var(--c,var(--blue));border-radius:14px;padding:20px 22px;background:var(--cbg,var(--blue-bg))}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;max-width:640px}
+.bars .lab{font-weight:700}
+.bars .track{height:26px;background:var(--mono-bg);border-radius:6px;overflow:hidden;border:1px solid var(--edge)}
+.bars .fill{height:100%;background:var(--line-b);border-radius:6px;transition:width .4s}
+.bars .fill.hl{background:var(--orange)}
+.bars .val{font-family:var(--font-code);font-weight:700;font-variant-numeric:tabular-nums}
+.formcard{max-width:560px;border:1.5px solid var(--edge);border-radius:12px;overflow:hidden}
+.formcard .fh{background:var(--purple);color:var(--panel);padding:10px 16px;font-weight:700}
+.formcard .fb{padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.radio{display:flex;align-items:center;gap:10px;font-size:1rem}
+.radio i{width:16px;height:16px;border-radius:50%;border:2px solid var(--muted);display:inline-block}
+.pivot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:760px}
+.pivot .slot{border:2px solid var(--green);border-radius:10px;padding:10px 14px;background:var(--green-bg)}
+.pivot .slot b{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--green)}
+.pivot .slot span{font-family:var(--font-code);font-weight:700}
+.chat{display:flex;flex-direction:column;gap:10px;max-width:760px}
+.bubble{border-radius:14px;padding:12px 16px;max-width:92%}
+.bubble.me{align-self:flex-end;background:var(--blue-bg);color:var(--ink);border:1.5px solid var(--blue)}
+.bubble.ai{align-self:flex-start;background:var(--mono-bg);border:1.5px solid var(--edge)}
+.bubble small{display:block;font-weight:700;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+.check{display:inline-block;margin-top:8px;font-weight:700;color:var(--green)}
+.chart-wrap svg{width:100%;height:auto;display:block;max-height:360px}
+.compare{display:flex;flex-wrap:wrap;gap:14px}
+.compare .card{flex:1 1 220px}
+.bignum{font-family:var(--font-hand);font-weight:700;font-size:2.4rem;line-height:1.1;color:var(--ink)}
+.bignum.hl{color:var(--orange)}
+.formula{font-family:var(--font-hand);font-weight:700;font-size:clamp(1.25rem,3vw,1.7rem);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.formula span.box{border:2px solid var(--ink);border-radius:10px;padding:2px 12px;background:var(--panel)}
+.formula span.so{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+.insight{font-size:1.25rem;line-height:1.5;border-left:5px solid var(--red);padding:8px 16px;background:var(--mono-bg);border-radius:0 10px 10px 0;margin-top:14px}
+.decision{display:inline-block;margin-top:14px;font-family:var(--font-hand);font-weight:700;font-size:1.5rem;color:var(--green);border:2.5px solid var(--green);border-radius:12px;padding:4px 16px}
+.ladder{display:flex;flex-direction:column;gap:10px}
+.rung{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr);gap:12px;border:1.5px solid var(--edge);border-radius:12px;padding:12px 14px;background:var(--panel);opacity:.4;transition:opacity .2s}
+.rung.seen{opacity:.75}
+.rung.on{opacity:1;border:2px solid var(--blue);background:var(--blue-bg)}
+.rung .size{font-family:var(--font-hand);font-weight:700;font-size:1.25rem;line-height:1.2}
+.rung .size small{display:block;font-family:var(--font-body);font-weight:400;font-size:.8rem;color:var(--muted)}
+.rung b.can{color:var(--green)}
+.rung b.cant{color:var(--red)}
+.json{font-family:var(--font-code);font-size:.88rem;background:var(--mono-bg);border:1px solid var(--edge);border-radius:10px;padding:12px 14px;white-space:pre;overflow-x:auto;line-height:1.55}
+.equiv{margin-top:12px;border:2px dashed var(--green);border-radius:12px;padding:10px 14px;background:var(--green-bg)}
+.equiv b{color:var(--green)}
+.ds{display:flex;flex-direction:column;gap:6px}
+.ds .src{font-size:.8rem;color:var(--muted);font-family:var(--font-code);word-break:break-all}
+.reveal{margin-top:6px}
+.ans{margin-top:6px;color:var(--green);font-weight:700}
+
+.why{margin-top:14px;border-left:5px solid var(--c,var(--blue));background:var(--cbg,var(--blue-bg));border-radius:0 10px 10px 0;padding:10px 16px;font-size:1.08rem;line-height:1.45}
+.why b.h{display:block;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--c,var(--blue))}
+.ipomap{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.95rem;color:var(--muted);margin-top:4px}
+.ipomap b{color:var(--ink)}
+.nolist{display:flex;flex-wrap:wrap;gap:10px}
+.nolist span{font-weight:700;font-size:1.05rem;padding:8px 14px;border-radius:10px;border:2px solid var(--red);color:var(--red);background:var(--red-bg);text-decoration:line-through}
+.titlecard{background:var(--panel);border:1.5px solid var(--edge);border-radius:18px;padding:clamp(22px,5vw,56px);margin-top:min(6vh,48px)}
+.t-title{font-family:var(--font-hand);font-weight:700;font-size:clamp(2.6rem,8vw,5rem);line-height:1;color:var(--blue);margin:6px 0 6px;text-wrap:balance}
+.t-sub{font-size:clamp(1.15rem,2.6vw,1.6rem);color:var(--muted);margin:0}
+.t-rule{width:120px;height:6px;border-radius:3px;background:var(--orange);margin:26px 0}
+.t-who p{margin:0;font-size:1.08rem;color:var(--muted)}
+.t-who .t-name{font-family:var(--font-hand);font-weight:700;font-size:clamp(1.5rem,3.4vw,2.1rem);color:var(--ink);margin-bottom:4px}
+.t-pipe{margin:30px 0 0}
+.askcard{border:2.5px dashed var(--orange);background:var(--orange-bg);border-radius:14px;padding:16px 20px;margin-bottom:14px}
+.askcard .pill{color:var(--orange)}
+.hints{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.hints span{font-weight:700;font-size:.92rem;background:var(--panel);border:1.5px solid var(--edge);border-radius:999px;padding:4px 12px}
+.focus{border:2.5px solid var(--c);background:var(--cbg);border-radius:14px;padding:14px 20px;margin-bottom:14px}
+.focus .fl{font-family:var(--font-hand);font-weight:700;font-size:1.7rem;line-height:1.1;color:var(--c)}
+.focus .fs{font-family:var(--font-code);font-weight:700;font-size:1rem;margin:6px 0}
+.focus .fw{font-size:1.2rem;line-height:1.45}
+.focus .fw b{color:var(--c)}
+.focus.no{--c:var(--red);--cbg:var(--red-bg)}
+.it{border-radius:8px;padding:6px 8px;border:1.5px solid transparent}
+.it.on{background:var(--marker);border-color:var(--marker-edge)}
+.it.no b{color:var(--red)}
+.it.no .itx{text-decoration:line-through;color:var(--muted)}
+.qph{border:2px dashed var(--c);border-radius:8px;padding:10px;text-align:center;font-family:var(--font-hand);font-weight:700;font-size:1.6rem;color:var(--c)}
+.ipo-col.dim{opacity:.45}
+.evid{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;margin-bottom:14px}
+@media (max-width:700px){.evid{grid-template-columns:1fr}}
+.ipo{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:stretch}
+.ipo-col{border:2px solid var(--c);border-radius:12px;background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.ipo-h{font-family:var(--font-hand);font-weight:700;font-size:1.5rem;line-height:1.1;color:var(--c)}
+.ipo-d{margin:0;font-weight:700}
+.ipo-s{background:var(--cbg);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ipo-tag{align-self:flex-start;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c);border:1.5px solid var(--c);border-radius:999px;padding:1px 10px}
+.ipo-row{display:flex;flex-direction:column;font-size:.95rem;line-height:1.4}
+.ipo-row b{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.ipo-row .mono{font-size:.88rem;font-weight:700}
+.ipo-arrow{align-self:center;font-family:var(--font-hand);font-weight:700;font-size:2rem;color:var(--muted)}
+@media (max-width:900px){.ipo{grid-template-columns:minmax(0,1fr)}.ipo-arrow{transform:rotate(90deg);justify-self:center;line-height:1}}
+@media (max-width:900px){.grid3,.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.pivot{grid-template-columns:1fr}}
+@media (max-width:600px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.rung{grid-template-columns:1fr}.note{font-size:1.02rem}}
+@media (max-width:780px){
+  .rail{position:fixed;inset:0 auto 0 0;z-index:20;transform:translateX(-100%);transition:transform .2s;padding-top:calc(18px + env(safe-area-inset-top,0px));padding-left:max(12px,env(safe-area-inset-left,0px))}
+  .rail.open{transform:translateX(0);box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+  .stage{padding-top:64px}
+  .rail-toggle{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));z-index:21;background:var(--panel);border:1.5px solid var(--edge);border-radius:8px;padding:8px 12px;font:700 .85rem var(--font-body);cursor:pointer;color:var(--ink)}
+}
+@media (min-width:781px){.rail-toggle{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<button class="rail-toggle" id="railToggle" type="button">☰ Sections</button>
+
+<div class="app">
+<nav class="rail" id="rail" aria-label="Sections">
+  <div class="rail-title">Data Is Everywhere</div>
+  <div class="rail-sub">Finding the story in the numbers<br><b style="color:var(--ink)">Dr. Swarna Sethu</b> · Missouri Southern State University</div>
+
+  <div class="rail-group">Opening</div>
+  <button class="rail-item" data-go="welcome">Welcome</button>
+  <button class="rail-item" data-go="intro">Data is everywhere</button>
+  <button class="rail-item" data-go="roadmap">Your roadmap</button>
+  <button class="rail-item" data-go="kinds">What data is</button>
+
+  <div class="rail-group">Solve it live</div>
+  <button class="rail-item" data-go="case">Why is the Wi-Fi slow?</button>
+
+  <div class="rail-group">Going further</div>
+  <button class="rail-item" data-go="tools">No-code tool kit</button>
+  <button class="rail-item" data-go="small">Is 60 tests enough?</button>
+  <button class="rail-item" data-go="datasets">Where to find data</button>
+  <button class="rail-item" data-go="ai">AI tools for data</button>
+  <button class="rail-item" data-go="github">A real project on GitHub</button>
+
+  <div class="rail-group">Wrap-up</div>
+  <button class="rail-item" data-go="exit">Exit ticket &amp; questions</button>
+
+  <div class="rail-keys"><kbd>Enter</kbd> next · <kbd>←</kbd> back</div>
+</nav>
+
+<main class="stage"><div class="stage-inner" id="stageInner">
+
+<!-- ============ WELCOME ============ -->
+<section data-sec="welcome">
+  <div class="titlecard">
+    <p class="eyebrow">Bentonville Schools · Tech Club</p>
+    <h1 class="t-title">Data Is Everywhere</h1>
+    <p class="t-sub">Finding the story in the numbers</p>
+    <div class="t-rule" aria-hidden="true"></div>
+    <div class="t-who">
+      <p class="t-name">Dr. Swarna Sethu</p>
+      <p>Assistant Professor, Computer Information Science</p>
+      <p>Technology Department</p>
+      <p>Missouri Southern State University</p>
+    </div>
+    <div class="t-pipe pipe pipe-static"><div class="st s0"><span class="n">1</span>Collect</div><div class="st s1"><span class="n">2</span>Clean &amp; store</div><div class="st s2"><span class="n">3</span>Analyze</div><div class="st s3"><span class="n">4</span>Visualize</div><div class="st s4"><span class="n">5</span>Decide</div></div>
+  </div>
+</section>
+
+<!-- ============ INTRO ============ -->
+<section data-sec="intro">
+  <p class="eyebrow">Opening</p>
+  <h1 class="sec-title">Where did you leave data today?</h1>
+  <p class="lede">Every tap, scan and swipe leaves a record. Data is a record of what people and machines actually do.</p>
+  <div class="grid4">
+    <div class="card"><h3>Unlocking a phone</h3><p>A timestamp, every time</p></div>
+    <div class="card"><h3>Streaming a song</h3><p>A play count, a skip, a replay</p></div>
+    <div class="card"><h3>Scanning a school ID</h3><p>An attendance record</p></div>
+    <div class="card"><h3>Buying something</h3><p>A checkout scan: item, time, price</p></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h4>Close to home</h4>
+    <p>Every checkout scan at a store becomes a row of data. Stores use those rows to decide what goes on the shelf, when to restock, and how many cashiers to schedule. Lots of people in Northwest Arkansas do exactly this work.</p>
+  </div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section data-sec="roadmap">
+  <p class="eyebrow">Your program</p>
+  <h1 class="sec-title">Four missions, one product</h1>
+  <p class="lede">Every mission builds the same product. At the end, you present the whole journey to speakers, parents and local tech leaders.</p>
+  <div class="grid4">
+    <div class="card" style="border:2.5px solid var(--orange);background:var(--orange-bg)"><span class="pill" style="color:var(--orange)">TODAY</span><h3 style="margin-top:8px">1 · Data</h3><p>Prove your problem is real</p></div>
+    <div class="card"><span class="pill" style="color:var(--muted)">NEXT</span><h3 style="margin-top:8px">2 · Plan</h3><p>Turn it into a product plan</p></div>
+    <div class="card"><span class="pill" style="color:var(--muted)">THEN</span><h3 style="margin-top:8px">3 · Design</h3><p>Design and test the experience</p></div>
+    <div class="card"><span class="pill" style="color:var(--muted)">FINALLY</span><h3 style="margin-top:8px">4 · AI &amp; App</h3><p>Build the app with no-code tools</p></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <p class="big-q">Every good app starts with evidence that the problem is real.</p>
+    <p>That is the first mission, and that is today: what data is, where it comes from, how to collect it, how to analyze it, and how to turn numbers into insight.</p>
+  </div>
+</section>
+
+<!-- ============ KINDS ============ -->
+<section data-sec="kinds">
+  <p class="eyebrow">Before we solve anything</p>
+  <h1 class="sec-title">What data is</h1>
+  <p class="lede">Data comes in two kinds, and it almost always ends up in the same shape: rows and columns.</p>
+  <div class="grid2">
+    <div class="panel"><h4 style="color:var(--blue)">Numerical: you can measure or count it</h4><ul><li>Minutes waited in the lunch line</li><li>Songs played today</li><li>Points scored in a game</li></ul></div>
+    <div class="panel"><h4 style="color:var(--orange)">Categorical: labels or groups</h4><ul><li>Grade: 9th, 10th, 11th, 12th</li><li>How you get to school: bus, car, walk</li><li>Favorite club</li></ul></div>
+  </div>
+  <div class="panel">
+    <h4>Data lives in rows and columns</h4>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>response</th><th>grade</th><th>travel</th><th class="num">wait_minutes</th></tr>
+      <tr><td>1</td><td>9th</td><td>bus</td><td class="num">12</td></tr>
+      <tr><td>2</td><td>11th</td><td>walk</td><td class="num">8</td></tr>
+      <tr><td>3</td><td>10th</td><td>car</td><td class="num">10</td></tr>
+    </table></div>
+    <p style="margin-top:10px">One <b>row</b> = one record (one person’s answers). One <b>column</b> = one thing asked of everyone. Every tool you will see today expects this shape.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel"><h4>Raw data → information</h4><p class="mono" style="font-size:1.05rem">12, 8, 10 &nbsp;→&nbsp; <span class="hand" style="font-size:1.3rem">“The lunch-line wait averages 10 minutes.”</span></p><p style="color:var(--muted)">Raw data is the list. Information is what the list means.</p></div>
+    <div class="panel"><h4>Quick check</h4><p>Is <b>bus</b> a number or a category? Is <b>12 minutes</b>?</p><button class="btn reveal" type="button" data-reveal="k1">Show answer</button><p class="ans" id="k1" hidden>bus is categorical; 12 minutes is numerical.</p></div>
+  </div>
+</section>
+
+<!-- ============ CASE (one trace) ============ -->
+<section data-sec="case">
+  <p class="eyebrow">Solve a real problem · you are the network engineer</p>
+  <h1 class="sec-title">Why is the school Wi-Fi slow?</h1>
+  <p class="lede">Everyone says the Wi-Fi is terrible. That’s an opinion. Let’s turn it into evidence, one stage at a time, with real no-code tools.</p>
+  <div id="vizCase"></div>
+</section>
+
+<!-- ============ TOOLS ============ -->
+<section data-sec="tools">
+  <p class="eyebrow">Real-world tools, no code</p>
+  <h1 class="sec-title">The no-code tool kit</h1>
+  <p class="lede">Everything in the free column works today with a school Google or Microsoft account. The pros’ tools on the right are also mostly drag-and-drop.</p>
+  <div class="tbl-wrap panel" style="padding:8px 12px">
+  <table class="data">
+    <tr><th>Stage</th><th>Free, start today</th><th>What professionals use</th></tr>
+    <tr class="s0"><td style="color:var(--c);font-weight:700;font-family:var(--font-body)">1 · Collect</td><td class="txt">Google Forms, Microsoft Forms, Speedtest by Ookla app, public data portals</td><td class="txt">Qualtrics, SurveyMonkey, network monitoring dashboards</td></tr>
+    <tr class="s1"><td style="color:var(--c);font-weight:700;font-family:var(--font-body)">2 · Clean &amp; store</td><td class="txt">Google Sheets (Remove duplicates, Find and replace), Airtable</td><td class="txt">Excel Power Query, company databases</td></tr>
+    <tr class="s2"><td style="color:var(--c);font-weight:700;font-family:var(--font-body)">3 · Analyze</td><td class="txt">Sheets pivot tables; AI assistants (Claude, ChatGPT, Gemini)</td><td class="txt">Tableau, Microsoft Power BI</td></tr>
+    <tr class="s3"><td style="color:var(--c);font-weight:700;font-family:var(--font-body)">4 · Visualize</td><td class="txt">Sheets charts, Looker Studio, Canva charts, Flourish</td><td class="txt">Tableau, Power BI dashboards</td></tr>
+    <tr class="s4"><td style="color:var(--c);font-weight:700;font-family:var(--font-body)">5 · Decide &amp; share</td><td class="txt">Google Slides, Canva; later, Glide turns a Google Sheet into an app</td><td class="txt">Executive dashboards, written briefs</td></tr>
+  </table>
+  </div>
+  <div class="panel" style="border:2px dashed var(--green)">
+    <h4 style="color:var(--green)">One chain, start to finish</h4>
+    <p class="hand" style="font-size:1.3rem">Google Form → Google Sheet → pivot table or AI assistant → chart → one-sentence insight</p>
+    <p>And the same Google Sheet can become the data behind your app in Mission 4: Glide builds apps directly from a spreadsheet.</p>
+  </div>
+</section>
+
+<!-- ============ SMALL DATA (stepper) ============ -->
+<section data-sec="small">
+  <p class="eyebrow">Be honest about your data</p>
+  <h1 class="sec-title">Is 60 tests enough?</h1>
+  <p class="lede">Our sample dataset is tiny. A small dataset gives you a clue, not proof. Here’s what each amount of data lets you honestly say.</p>
+  <div id="vizSmall"></div>
+</section>
+
+<!-- ============ DATASETS ============ -->
+<section data-sec="datasets">
+  <p class="eyebrow">You don’t always have to collect it yourself</p>
+  <h1 class="sec-title">Where to find real data</h1>
+  <p class="lede">Governments, universities and companies publish huge datasets for free. Most open straight in Google Sheets, or as a map or chart in the browser.</p>
+  <div class="grid3">
+    <div class="card ds"><h3>Kaggle Datasets</h3><p>Thousands of datasets on every topic, from sports to music to schools. Free account.</p><a class="src" href="https://www.kaggle.com/datasets" target="_blank" rel="noopener">kaggle.com/datasets</a></div>
+    <div class="card ds"><h3>Data.gov</h3><p>U.S. government open data: education, transportation, health, environment.</p><a class="src" href="https://data.gov" target="_blank" rel="noopener">data.gov</a></div>
+    <div class="card ds"><h3>U.S. Census Bureau</h3><p>Population, income and internet access for any town, county or state.</p><a class="src" href="https://data.census.gov" target="_blank" rel="noopener">data.census.gov</a></div>
+    <div class="card ds"><h3>FCC National Broadband Map</h3><p>Which internet providers and speeds are available at any address. Data downloads too.</p><a class="src" href="https://broadbandmap.fcc.gov" target="_blank" rel="noopener">broadbandmap.fcc.gov</a></div>
+    <div class="card ds"><h3>Ookla Open Data</h3><p>Average speeds from Speedtest app users worldwide, updated every quarter, in about 610 m tiles.</p><a class="src" href="https://registry.opendata.aws/speedtest-global-performance" target="_blank" rel="noopener">registry.opendata.aws/speedtest-global-performance</a></div>
+    <div class="card ds"><h3>Google Dataset Search</h3><p>A search engine just for datasets. Type a topic, get data.</p><a class="src" href="https://datasetsearch.research.google.com" target="_blank" rel="noopener">datasetsearch.research.google.com</a></div>
+    <div class="card ds"><h3>Our World in Data</h3><p>Ready-made charts and downloadable data on global topics.</p><a class="src" href="https://ourworldindata.org" target="_blank" rel="noopener">ourworldindata.org</a></div>
+    <div class="card ds"><h3>UCI Data Repository</h3><p>Hundreds of classic datasets used by universities for teaching.</p><a class="src" href="https://archive.ics.uci.edu" target="_blank" rel="noopener">archive.ics.uci.edu</a></div>
+    <div class="card ds"><h3>Your own school or city</h3><p>School report cards, city open-data pages, club records. Ask who already counts it.</p><span class="src">ask an adult who owns the data</span></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h4>Four questions before you trust a dataset</h4>
+    <ol><li><b>Who</b> collected it, and why?</li><li><b>When</b> was it collected? Is it still current?</li><li><b>How much</b> is there? Enough to say something?</li><li><b>Can you use it?</b> Check the license.</li></ol>
+  </div>
+</section>
+
+<!-- ============ AI ============ -->
+<section data-sec="ai">
+  <p class="eyebrow">AI-assisted, no code</p>
+  <h1 class="sec-title">AI tools for data</h1>
+  <p class="lede">You don’t need to program to get help from AI. Upload a spreadsheet to an AI assistant and ask questions in plain English.</p>
+  <div class="grid2">
+    <div class="card"><h3>Ask questions of your data</h3><p>“Which location has the slowest average speed?” Upload the Sheet or CSV to Claude, ChatGPT or Gemini and ask.</p></div>
+    <div class="card"><h3>Summarize open-ended answers</h3><p>Paste 100 survey comments and ask: “What are the top three complaints?”</p></div>
+    <div class="card"><h3>Find messy data</h3><p>“Find typos, duplicates and impossible values in this sheet.”</p></div>
+    <div class="card"><h3>Suggest a chart</h3><p>“What chart best shows speed by time of day?” Then build it in Sheets or Canva.</p></div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="panel" style="border:2px solid var(--red)">
+      <h4 style="color:var(--red)">Three rules for using AI with data</h4>
+      <ol>
+        <li><b>Check one number yourself.</b> AI can be confidently wrong. Compare it with your pivot table.</li>
+        <li><b>Keep private data out.</b> No names, emails or student IDs in the upload.</li>
+        <li><b>Say when you used AI</b> in your problem brief.</li>
+      </ol>
+    </div>
+    <div class="panel">
+      <h4>Why data still matters with AI</h4>
+      <p>AI assistants were built by learning patterns from enormous amounts of data. That is why the same rule applies to them as to you: bad data in, bad answers out.</p>
+      <p>In Mission 4 you add <b>one AI feature</b> to your app. The data you collect now is what that feature will work with.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GITHUB (stepper) ============ -->
+<section data-sec="github">
+  <p class="eyebrow">A real solved problem</p>
+  <h1 class="sec-title">A home Wi-Fi investigation on GitHub</h1>
+  <p class="lede">Someone had our exact question at home and published the whole project: <a href="https://github.com/BigBangData/Speedtest" target="_blank" rel="noopener">github.com/BigBangData/Speedtest</a>. It follows the same five stages.</p>
+  <div id="vizGit"></div>
+</section>
+
+<!-- ============ EXIT ============ -->
+<section data-sec="exit">
+  <p class="eyebrow">Before you go</p>
+  <h1 class="sec-title">Exit ticket</h1>
+  <p class="lede">About 5 minutes on paper or an index card, then questions.</p>
+  <div class="panel"><h4>1 · Put the five stages in order</h4><p>Decide · Collect · Visualize · Clean &amp; store · Analyze</p>
+    <button class="btn reveal" type="button" data-reveal="a1">Show answer</button><p class="ans" id="a1" hidden>Collect → Clean &amp; store → Analyze → Visualize → Decide</p></div>
+  <div class="panel"><h4>2 · Fix this survey question</h4><p class="hand" style="font-size:1.3rem">“Don’t you love the new school app?”</p>
+    <button class="btn reveal" type="button" data-reveal="a2">Show answer</button><p class="ans" id="a2" hidden>Neutral, with fixed answers: “How often do you use the new school app? Daily / weekly / rarely / never.”</p></div>
+  <div class="panel"><h4>3 · Your turn</h4><p>Name a problem at your school, one way to collect data on it, and one no-code tool you would use.</p>
+    <button class="btn reveal" type="button" data-reveal="a3">Show an example</button><p class="ans" id="a3" hidden>“Clubs are hard to find. Survey: how many clubs can you name? Tool: Google Forms.”</p></div>
+  <div class="panel" style="border:2px dashed var(--blue)">
+    <p class="big-q">Collect, clean, analyze, visualize, decide.</p>
+    <p>The same five stages work for a network engineer, a store planner and your team’s first mission. Finish every number with a <b>so</b>.</p>
+  </div>
+</section>
+
+</div></main>
+</div>
+
+<script>
+(function(){
+"use strict";
+var STAGES=["Collect","Clean & store","Analyze","Visualize","Decide"];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function pipeHTML(active,doneUpTo){
+  return '<div class="pipe">'+STAGES.map(function(n,i){
+    var cls='st s'+i+(i===active?' on':'')+(i<doneUpTo&&i!==active?' done':'');
+    return '<div class="'+cls+'"><span class="n">'+(i+1)+'</span>'+esc(n)+'</div>';
+  }).join('')+'</div>';
+}
+
+/* ---------- Wi-Fi sample data (made up for teaching) ---------- */
+var AVG={Library:[92,84,80,86],Classrooms:[88,70,78,68],Cafeteria:[95,90,22,88]};
+var TIMES=["8 AM","10 AM","Noon","2 PM"];
+var SURVEY=[["Morning",3],["Mid-morning",5],["Lunch",24],["Afternoon",8]];
+
+function surveyBars(){
+  var max=24;
+  return '<div class="label">Results · 40 responses</div><div class="bars">'+SURVEY.map(function(r){
+    return '<span class="lab">'+r[0]+'</span><span class="track"><span class="fill'+(r[0]==="Lunch"?' hl':'')+'" style="display:block;width:'+(r[1]/max*100)+'%"></span></span><span class="val">'+r[1]+(r[0]==="Lunch"?' (60%)':'')+'</span>';
+  }).join('')+'</div>';
+}
+function table(cols,rows){
+  var h='<div class="tbl-wrap"><table class="data"><tr>'+cols.map(function(c){return '<th'+(c.num?' class="num"':'')+'>'+esc(c.t)+'</th>';}).join('')+'</tr>';
+  rows.forEach(function(r){
+    h+='<tr'+(r.cls?' class="'+r.cls+'"':'')+'>'+r.v.map(function(v,i){return '<td'+(cols[i]&&cols[i].num?' class="num"':'')+'>'+esc(v)+'</td>';}).join('')+(r.tag?'':'')+'</tr>';
+  });
+  return h+'</table></div>';
+}
+var C5=[{t:"test_id"},{t:"location"},{t:"time"},{t:"device"},{t:"speed_mbps",num:1}];
+var C6=C5.concat([{t:"devices_connected",num:1}]);
+var C7=C6.concat([{t:"problem"}]);
+
+function pivotGrid(hl){
+  var h='<div class="tbl-wrap"><table class="data"><tr><th>AVERAGE of speed_mbps</th>'+TIMES.map(function(t){return '<th class="num">'+t+'</th>';}).join('')+'</tr>';
+  Object.keys(AVG).forEach(function(loc){
+    h+='<tr><td style="font-family:var(--font-body);font-weight:700">'+loc+'</td>'+AVG[loc].map(function(v,i){
+      var on=hl&&loc==="Cafeteria"&&i===2;
+      return '<td class="num'+(on?' hl':'')+'">'+v+'</td>';}).join('')+'</tr>';
+  });
+  return h+'</table></div>';
+}
+function chartSVG(showCaf){
+  var W=640,H=320,L=56,R=110,T=20,B=44,pw=W-L-R,ph=H-T-B;
+  function x(i){return L+i*(pw/3);} function y(v){return T+ph-(v/100)*ph;}
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Average download speed by time of day"><g>';
+  [0,25,50,75,100].forEach(function(v){s+='<line x1="'+L+'" x2="'+(L+pw)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--edge)" stroke-width="1"/><text x="'+(L-10)+'" y="'+(y(v)+5)+'" text-anchor="end" font-size="13" fill="var(--muted)" font-family="JetBrains Mono, monospace">'+v+'</text>';});
+  TIMES.forEach(function(t,i){s+='<text x="'+x(i)+'" y="'+(H-14)+'" text-anchor="middle" font-size="14" fill="var(--ink)" font-weight="700" font-family="Atkinson Hyperlegible, sans-serif">'+t+'</text>';});
+  s+='<text x="'+(L-44)+'" y="'+(T+ph/2)+'" transform="rotate(-90 '+(L-44)+' '+(T+ph/2)+')" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="Atkinson Hyperlegible, sans-serif">Mbps</text>';
+  var series=[["Library","var(--line-a)"],["Classrooms","var(--line-b)"]];
+  if(showCaf) series.push(["Cafeteria","var(--orange)"]);
+  var endY={Library:0,Classrooms:0,Cafeteria:0};
+  series.forEach(function(sr){
+    var d=AVG[sr[0]].map(function(v,i){return (i?'L':'M')+x(i)+' '+y(v);}).join(' ');
+    var w=sr[0]==="Cafeteria"?4:3;
+    s+='<path d="'+d+'" fill="none" stroke="'+sr[1]+'" stroke-width="'+w+'" stroke-linejoin="round" stroke-linecap="round"/>';
+    AVG[sr[0]].forEach(function(v,i){s+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(sr[0]==="Cafeteria"?6:4.5)+'" fill="'+sr[1]+'"><title>'+sr[0]+', '+TIMES[i]+': '+v+' Mbps</title></circle>';});
+    endY[sr[0]]=y(AVG[sr[0]][3]);
+  });
+  // end labels, spaced to avoid overlap
+  var labs=series.map(function(sr){return {n:sr[0],c:sr[1],y:endY[sr[0]]};}).sort(function(a,b){return a.y-b.y;});
+  for(var i=1;i<labs.length;i++){if(labs[i].y-labs[i-1].y<18)labs[i].y=labs[i-1].y+18;}
+  labs.forEach(function(lb){s+='<text x="'+(x(3)+12)+'" y="'+(lb.y+5)+'" font-size="14" font-weight="700" fill="'+lb.c+'" font-family="Atkinson Hyperlegible, sans-serif">'+lb.n+'</text>';});
+  if(showCaf){
+    s+='<text x="'+(x(2)+12)+'" y="'+(y(22)+5)+'" font-size="14" font-weight="700" fill="var(--orange)" font-family="JetBrains Mono, monospace">22 Mbps · 310 devices</text>';
+  }
+  s+='</g></svg>';
+  return '<div class="label">Average download speed (Mbps) by time of day · sample data</div><div class="chart-wrap">'+s+'</div>';
+}
+
+function ask(q,hints){return '<div class="askcard"><span class="pill">Think about it</span><p class="big-q" style="margin-top:8px">'+esc(q)+'</p><div class="hints">'+hints.map(function(x){return '<span>'+esc(x)+'</span>';}).join('')+'</div></div>';}
+function why(t){return '';}
+
+var FLOW=[
+ {st:0,ask:1,note:"Think about three sources: the people who use it, what you can measure, and what the network already knows.",html:function(){return ask("What data would you collect to find out why the Wi-Fi is slow?",["What do people experience?","What can you measure yourself?","What does the network itself know?"]);}},
+ {st:0,note:"Source 1: ask the people who use it. Fixed answers, not a text box, so the answers can be counted.",
+  html:function(){return '<div class="formcard"><div class="fh">Google Forms · School Wi-Fi survey</div><div class="fb"><b>At what time of day is the Wi-Fi slowest?</b>'+SURVEY.map(function(r){return '<span class="radio"><i></i>'+r[0]+'</span>';}).join('')+'</div></div>'+why("A survey tells you what people <b>experience</b> and <b>when</b> they notice it. Fixed answers, not a text box, make it countable.");}},
+ {st:0,note:"Answers land in a Google Sheet automatically. 24 of 40 picked lunch. That’s what people say; next, check what actually happens.",
+  html:function(){return surveyBars()+why("It points you to <b>where to look</b>: lunchtime. Now check what actually happens.");}},
+ {st:0,note:"Source 2: measure it yourself. Five Speedtest runs at each place and time; each result is one row.",
+  html:function(){return '<div class="label">Google Sheet · speed tests</div>'+table(C5,[{v:[1,"Library","08:00","phone",91],cls:"new"},{v:[2,"Library","08:00","laptop",88],cls:"new"},{v:[3,"Library","08:00","tablet",92],cls:"new"},{v:[4,"Library","08:00","phone",96],cls:"new"},{v:[5,"Library","08:00","laptop",93],cls:"new"}])+why("Measures what <b>actually happens</b>, by place and time. Five tests each, so one bad moment can’t fool you.");}},
+ {st:0,note:"Source 3: the network itself. The router counts the devices on each access point, a possible cause.",
+  html:function(){return '<div class="label">Google Sheet · 60 rows in all (showing 5)</div>'+table(C6,[{v:[51,"Cafeteria","12:00","phone",18,310],cls:"new"},{v:[52,"Cafeteria","12:00","laptop",25,310],cls:"new"},{v:[53,"Cafeteria","12:00","tablet",20,310],cls:"new"},{v:[54,"Cafeteria","12:00","phone",27,310],cls:"new"},{v:[55,"Cafeteria","12:00","laptop",20,310],cls:"new"}])+why("A possible <b>cause</b>. Speed tells you <i>that</i> it’s slow; device counts start to tell you <i>why</i>.");}},
+ {st:0,ask:1,note:"More data is not always better data.",html:function(){return ask("Is there any data we should NOT collect?",["Does it answer our question?","Is it private?"]);}},
+ {st:0,note:"Leave out anything that doesn’t answer the question, and anything private.",
+  html:function(){return '<div class="label">Leave these out</div><div class="nolist"><span>Names</span><span>Phone brands</span><span>Favorite apps</span><span>Student IDs</span></div>'+why("They don’t answer the question, and names and IDs are private. <b>Collect only what answers the question.</b>");}},
+ {st:1,ask:1,note:"Think about typos, blanks, impossible numbers and repeats.",html:function(){return ask("You have 60 rows. Can you trust every one? What could go wrong?",["Typos?","Missing values?","Impossible numbers?","Duplicates?"]);}},
+ {st:1,note:"Real data is messy. One bad row can change the whole result.",
+  html:function(){return '<div class="label">Spot the problems</div>'+table(C7,[{v:[51,"Cafeteria","12:00","phone",18,310,"OK"]},{v:[56,"cafeteria","12:00","phone",21,310,"lowercase label"],cls:"bad"},{v:[57,"Cafetria","12:00","laptop",24,310,"typo"],cls:"bad"},{v:[58,"Cafeteria","12:00","tablet","",310,"missing value"],cls:"bad"},{v:[59,"Cafeteria","12:00","laptop",2000,310,"impossible value"],cls:"bad"},{v:[59,"Cafeteria","12:00","laptop",2000,310,"duplicate row"],cls:"bad"}])+why("“Cafetria” would count as a fourth location. One 2000 Mbps reading would make the cafeteria look fast. <b>One bad row can fake a whole finding.</b>");}},
+ {st:1,note:"Fixed in Google Sheets: Find and replace, Data → Data cleanup → Remove duplicates, and delete rows you can’t trust.",
+  html:function(){return '<div class="label">After cleaning</div>'+table(C7,[{v:[51,"Cafeteria","12:00","phone",18,310,"OK"]},{v:[56,"Cafeteria","12:00","phone",21,310,"fixed label"],cls:"fixed"},{v:[57,"Cafeteria","12:00","laptop",24,310,"fixed typo"],cls:"fixed"},{v:[58,"Cafeteria","12:00","tablet","",310,"removed: retest"],cls:"gone"},{v:[59,"Cafeteria","12:00","laptop",2000,310,"removed: impossible"],cls:"gone"},{v:[59,"Cafeteria","12:00","laptop",2000,310,"removed: duplicate"],cls:"gone"}])+why("Professionals often say most of their time goes into cleaning. <b>Garbage in, garbage out.</b>");}},
+ {st:2,ask:1,note:"Hint: group the rows, then find one typical number for each group.",html:function(){return ask("Sixty rows are too many to read. How do you turn them into a few numbers?",["Group by place?","Group by time?","One typical number per group?"]);}},
+ {st:2,note:"A pivot table: no formulas. Drag three fields into place, and 60 rows become 12 averages.",
+  html:function(){return '<div class="label">Google Sheets · Insert → Pivot table</div><div class="pivot"><div class="slot"><b>Rows</b><span>location</span></div><div class="slot"><b>Columns</b><span>time</span></div><div class="slot"><b>Values</b><span>AVERAGE of speed_mbps</span></div></div>'+why("Groups every test by place and time, and gives <b>one average per group</b>. 60 rows become 12 numbers.");}},
+ {st:2,note:"Twelve numbers. The cafeteria at noon, 22 Mbps, is the only one below 68.",
+  html:function(){return '<div class="label">Pivot table result · average Mbps</div>'+pivotGrid(true)+why("The cafeteria at noon: <b>22 Mbps</b>. Every other cell is 68 or higher.");}},
+ {st:2,note:"Another way: upload the Sheet to an AI assistant and ask. Then check its answer against the pivot table.",
+  html:function(){return '<div class="chat"><div class="bubble me"><small>Question to an AI assistant · Sheet uploaded</small>Which location and time has the slowest average speed?</div><div class="bubble ai"><small>AI assistant · example reply</small>The cafeteria at 12:00, averaging 22 Mbps. At the same time, connected devices on that access point jump to 310.</div><span class="check">✓ Checked against the pivot table: 22.</span></div>'+why("AI is fast, but it can be confidently wrong. <b>Never trust a number you didn’t check.</b>");}},
+ {st:2,ask:1,note:"A number only means something next to another number.",html:function(){return ask("Is 22 Mbps bad? Compared to what?",["Same place, earlier?","Other places, same time?","How many devices?"]);}},
+ {st:2,note:"95 vs. 22 Mbps, and 25 vs. 310 devices. The survey and the measurements point to the same place and time.",
+  html:function(){return '<div class="compare"><div class="card"><p>Cafeteria speed</p><div class="bignum">95 → <span style="color:var(--orange)">22</span></div><p>8 AM vs. noon · about 77% slower</p></div><div class="card"><p>Devices on that access point</p><div class="bignum">25 → <span style="color:var(--orange)">310</span></div><p>more than 12 times as many</p></div><div class="card"><p>Survey</p><div class="bignum">60%</div><p>said lunch is the slowest time</p></div></div>'+why("A number means nothing alone. 22 Mbps is only bad <b>next to 95</b>. And the survey agrees with the measurements: two sources pointing the same way.");}},
+ {st:3,ask:1,note:"Is the question about comparing groups, or about change over time?",html:function(){return ask("Which chart would show how speed changes during the day?",["Bar chart?","Line chart?","Pie chart?"]);}},
+ {st:3,note:"A line chart, because the question is about change over the day. Library and classrooms first.",
+  html:function(){return chartSVG(false)+why("Pick the chart by the question: <b>line</b> for change over time, <b>bar</b> to compare groups.");}},
+ {st:3,note:"Now add the cafeteria. Built in Google Sheets, Looker Studio or Canva.",
+  html:function(){return chartSVG(true)+why("Anyone can see the problem in <b>two seconds</b>. That’s the job of a chart.");}},
+ {st:4,ask:1,note:"Your sentence needs a number, a place and a time, and a so.",html:function(){return ask("What would you tell the principal, in one sentence? And what should happen next?",["Which number?","Where and when?","So what?"]);}},
+ {st:4,note:"The insight formula: a number, where, what happens, and so what.",
+  html:function(){return '<div class="label">The insight formula</div><div class="formula"><span class="box">Number</span>+<span class="box">Who or where</span>+<span class="box">What happens</span>→<span class="box so">SO: why it matters</span></div>'+why("A number alone is a fact. The <b>so</b> turns it into something someone can act on.");}},
+ {st:4,note:"Then measure again. “Cafeteria lunch speed above 60 Mbps” is a success metric.",
+  html:function(){return '<p class="insight" style="margin-top:0">“At lunch, cafeteria Wi-Fi drops about 77%, from 95 to 22 Mbps, as connected devices jump from 25 to 310. <b>So</b> the cafeteria needs another access point, not a new network for the whole school.”</p><span class="decision">Decision: add one access point in the cafeteria</span>'+why("Then <b>measure again</b>. “Cafeteria noon speed above 60 Mbps” is a <b>success metric</b>, and you’ll set your own in Mission 2.");}},
+ {st:5,note:"From opinion to evidence. That’s Mission 1.",
+  html:function(){return '<div class="evid"><div class="panel" style="margin:0"><h4>Opinion</h4><p class="big-q" style="color:var(--muted)">“The Wi-Fi is terrible.”</p></div><div class="ipo-arrow" aria-hidden="true">→</div><div class="panel" style="margin:0;border:2px solid var(--green)"><h4 style="color:var(--green)">Evidence</h4><p class="big-q">“Cafeteria Wi-Fi drops 77% at lunch.”</p></div></div><div class="ipomap"><span><b>Input</b> = Collect</span><span><b>Process</b> = Clean, Analyze, Visualize</span><span><b>Output</b> = Decide</span></div>';}}
+];
+
+var SMALL=[
+ {size:"1 test",sub:"one Speedtest at noon",can:"One reading was slow: 18 Mbps.",cant:"Anything about the cafeteria. It could be one bad moment."},
+ {size:"5 tests",sub:"same place, same time",can:"Noon was slow that day: about 22 Mbps on average.",cant:"Whether it happens every day."},
+ {size:"60 tests",sub:"3 places × 4 times, one day",can:"The cafeteria at noon is the outlier, and it lines up with device count.",cant:"That devices caused it, or that one day was normal. It might have been a pep rally."},
+ {size:"Weeks of logs",sub:"a network monitor records every access point, all day, every day",can:"Lunch slows down on most school days; patterns by weekday, test days and events.",cant:"Cause, until you change one thing and measure again."},
+ {size:"Public data",sub:"Ookla Open Data: quarterly averages from app users worldwide",can:"How your town’s internet compares with the region and the state.",cant:"What happens inside one building."}
+];
+var SMALLNOTES=[
+ "One test is an anecdote, not data. Never decide anything from one reading.",
+ "Five tests give an average, but only for one moment on one day.",
+ "Our sample: a clear pattern for one day. A clue, not proof. A real engineer would keep collecting.",
+ "Real networks log automatically, around the clock. That’s where confident patterns come from. To prove the cause, add the access point and measure again.",
+ "Public datasets add the big picture you could never collect yourself. Small data gives you a clue; more data gives you confidence."
+];
+
+var GIT=[
+ {st:-1,badge:"The problem",note:"A real person, a real question: which rooms in a new house get good Wi-Fi from an older router?",
+  html:function(){return '<div class="qcard"><div class="label" style="color:var(--blue)">Their question</div><p class="big-q">How fast is the download speed in each room of my house?</p><p>After moving into a new home with a separate, older router, the author wanted the average download speed in different parts of the house.</p></div>';}},
+ {st:0,badge:"Collect",note:"Same tool as ours: Ookla’s Speedtest, run automatically by a small script on a laptop.",
+  html:function(){return '<div class="panel"><h4>How they collected</h4><ul><li>A small script runs <b>Ookla’s Speedtest</b>: the computer version of the Speedtest app.</li><li>They start it with three choices: <b>the room</b>, <b>how many tests</b>, and <b>the longest wait</b> between tests. For example: living room, 5 tests, up to 5 minutes apart.</li><li>Between tests it waits a <b>random</b> time, from 10 seconds up to that limit, so the results aren’t all from one moment.</li><li>Each test records <b>download</b> and <b>upload</b> speed, <b>latency</b> (delay) and <b>jitter</b> (how much the delay jumps around).</li><li>At the end it saves the whole run as <b>one file</b>.</li></ul></div><div class="equiv"><b>No-code version:</b> the Speedtest app on a phone, plus a Google Form with a dropdown for the room.</div>';}},
+ {st:1,badge:"Clean & store",note:"One real saved run: 5 tests in a room they called upper_west. Each list holds one value per test, in order.",
+  html:function(){return '<p style="margin:0 0 12px;font-size:1.08rem"><b>Where this file comes from:</b> Speedtest can report its results as plain text or as <b>JSON</b>, a labeled format that computers read easily. Their script asked Speedtest for JSON, kept the numbers they needed, and added labels like the room and the date.</p><div class="label">A real saved run · data/test1.json · Sept 4, 2022</div><div class="json">{\n  "test": 1,\n  "day": "2022-09-04",\n  "location": "upper_west",\n  "computer": "HP ProBook 450 G5",\n  "access_point": "None",\n  "data": {\n    "time":     ["16:38:34", "16:39:47", "16:43:13", "16:45:29", "16:47:07"],\n    "jitter":   [1.044, 1.189, 1.904, 0.514, 2.18],\n    "latency":  [14.797, 13.487, 12.067, 13.509, 13.444],\n    "download": [157.935456, 121.17854, 121.29388, 152.303892, 170.274728],\n    "upload":   [10.703478, 7.654459, 9.4381, 9.449713, 8.825212]\n  }\n}</div><div class="grid3" style="margin-top:12px"><div class="card"><h3>Top part</h3><p>Labels for the whole run: run number, date, room, laptop, access point.</p></div><div class="card"><h3>data</h3><p>Five lists, one value per test. Test 1 ran at 16:38:34 and downloaded at about 158 Mbps.</p></div><div class="card"><h3>Cleaning built in</h3><p>Before saving, the script makes the room name lowercase and trims spaces, so “Upper_West ” and “upper_west” become the same room.</p></div></div><div class="equiv"><b>No-code version:</b> one row per test in a Google Sheet. A dropdown in the Form does the same cleaning job.</div>';}},
+ {st:2,badge:"Analyze",note:"They compared speeds across runs and rooms, and noticed something important: the speeds jumped around far more than expected.",
+  html:function(){return '<div class="grid2"><div class="card"><h3>Compare runs</h3><p>Every run side by side: does the same room give the same speed?</p></div><div class="card"><h3>Compare rooms</h3><p>Speed spread for each laptop location.</p></div></div><div class="panel" style="margin-top:14px;border:2px solid var(--orange)"><h4 style="color:var(--orange)">A complication they caught</h4><p>Different laptops and different router spots were mixed into the comparisons. When two things change at once, you can’t tell which one made the difference.</p></div>';}},
+ {st:3,badge:"Visualize",note:"Three charts, each answering a different question. Same idea as ours: pick the chart by the question.",
+  html:function(){return '<div class="grid3"><div class="card"><h3>Line chart</h3><p>The speed of each test in one run.</p></div><div class="card"><h3>Heatmap</h3><p>One column per run; brighter color = faster. Shows the patterns across all runs at once.</p></div><div class="card"><h3>Box plots</h3><p>The spread of speeds for each room, side by side.</p></div></div>';}},
+ {st:4,badge:"Decide",note:"An honest conclusion: the data didn’t prove the obvious story. That is a real finding too.",
+  html:function(){return '<div class="panel" style="border:2px solid var(--red)"><h4 style="color:var(--red)">What they concluded</h4><ul><li>Speeds varied <b>much more</b> than expected.</li><li>“It’s the time of day” or “it’s the router spot” may be more of a story than a proven fact.</li><li>Chance and the internet provider, things outside their control, probably explain most of the variation.</li><li>The sample was <b>too small</b> for a solid comparison, but good enough for their personal decision.</li></ul></div>';}},
+ {st:-1,badge:"Lessons for your team",note:"Same five stages, a real person, a real decision. Your first mission works exactly like this.",
+  html:function(){return '<div class="grid2"><div class="card"><h3>Collect more than you think</h3><p>They said their sample was too small. Plan for more data than feels necessary.</p></div><div class="card"><h3>Make answers consistent</h3><p>Dropdowns beat typing. Clean data starts at collection.</p></div><div class="card"><h3>Change one thing at a time</h3><p>Two changes at once hide the real cause.</p></div><div class="card"><h3>Say what you can’t prove</h3><p>An honest “we’re not sure yet” earns more trust than a confident guess.</p></div></div>';}}
+];
+
+/* ---------- stepper factory ---------- */
+var STEPPERS={};
+function makeStepper(secId,mountId,frames,opts){
+  var m=document.getElementById(mountId);
+  m.innerHTML='<div class="viz"><div class="viz-top"><span class="step-badge" data-r="badge"></span></div><div data-r="pipe"></div><div class="work" data-r="work"></div>'+
+   '<div class="notebar"><div class="label">Now</div><div class="note" data-r="note" aria-live="polite"></div></div>'+
+   '<div class="viz-controls"><button class="btn" type="button" data-r="reset">⟲ Restart</button><button class="btn" type="button" data-r="prev">◀ Back</button><button class="btn primary" type="button" data-r="next">Next step ▶</button><span class="step-count" data-r="count"></span></div>'+
+   '<div class="progress"><div data-r="bar"></div></div></div>';
+  function r(n){return m.querySelector('[data-r="'+n+'"]');}
+  var st={idx:-1,len:frames.length};
+  function render(){
+    var f=st.idx>=0?frames[st.idx]:null;
+    opts.render(f,st.idx,{badge:r("badge"),pipe:r("pipe"),work:r("work"),note:r("note")});
+    r("count").textContent=st.idx>=0?("step "+(st.idx+1)+" / "+st.len):("ready · "+st.len+" steps");
+    r("bar").style.width=((st.idx+1)/st.len*100)+"%";
+    r("prev").disabled=st.idx<=-1; r("next").disabled=st.idx>=st.len-1;
+  }
+  st.go=function(n){st.idx=Math.max(-1,Math.min(st.len-1,n));render();};
+  st.atEnd=function(){return st.idx>=st.len-1;}; st.atStart=function(){return st.idx<=-1;};
+  r("next").addEventListener("click",function(e){st.go(st.idx+1);e.currentTarget.blur();});
+  r("prev").addEventListener("click",function(e){st.go(st.idx-1);e.currentTarget.blur();});
+  r("reset").addEventListener("click",function(e){st.go(-1);e.currentTarget.blur();});
+  render(); STEPPERS[secId]=st;
+}
+
+
+var COLORS=["blue","purple","orange","green","red"];
+makeStepper("case","vizCase",FLOW,{render:function(f,i,el){
+  if(!f){el.badge.textContent="Ready";el.badge.style.background="";el.badge.style.color="";el.pipe.innerHTML=pipeHTML(-1,0);
+    el.work.innerHTML='<div class="qcard"><div class="label" style="color:var(--blue)">An opinion</div><p class="big-q">“The Wi-Fi is terrible.”</p><p>Nobody can act on this. Terrible where? When? How bad? Every data job answers it the same way: the five stages above.</p></div>';
+    el.note.textContent="Five stages. Each one starts with a question, then we do it with real tools.";return;}
+  if(f.st>4){el.badge.textContent="Opinion → evidence";el.badge.style.background="var(--green-bg)";el.badge.style.color="var(--green)";el.pipe.innerHTML=pipeHTML(-1,5);
+    el.work.innerHTML=f.html();el.note.textContent=f.note;return;}
+  el.badge.textContent=(f.ask?"Question · ":"")+"Stage "+(f.st+1)+" · "+STAGES[f.st];
+  el.badge.style.background="var(--"+COLORS[f.st]+"-bg)";el.badge.style.color="var(--"+COLORS[f.st]+")";
+  el.pipe.innerHTML=pipeHTML(f.st,f.st);
+  el.work.innerHTML='<div class="s'+f.st+'">'+f.html()+'</div>'; el.note.textContent=f.note;
+}});
+
+makeStepper("small","vizSmall",SMALL,{render:function(f,i,el){
+  el.badge.textContent=f?("Amount of data · "+f.size):"Ready";
+  el.pipe.innerHTML="";
+  el.work.innerHTML='<div class="ladder">'+SMALL.map(function(s,k){
+    var cls='rung'+(k===i?' on':(k<i?' seen':''));
+    var show=k<=i;
+    return '<div class="'+cls+'"><div class="size">'+s.size+'<small>'+s.sub+'</small></div><div><b class="can">You can say:</b> '+(show?s.can:'…')+'</div><div><b class="cant">You can’t say yet:</b> '+(show?s.cant:'…')+'</div></div>';
+  }).join('')+'</div>';
+  el.note.textContent=f?SMALLNOTES[i]:"Each step adds more data. Watch what you can honestly say change.";
+}});
+
+makeStepper("github","vizGit",GIT,{render:function(f,i,el){
+  if(!f){el.badge.textContent="Ready";el.pipe.innerHTML=pipeHTML(-1,0);
+    el.work.innerHTML='<div class="qcard"><div class="label" style="color:var(--blue)">github.com/BigBangData/Speedtest</div><p class="big-q">A real home Wi-Fi investigation, published for anyone to read.</p><p>A small personal project, not a famous one. That’s the point: ordinary people solve real problems with data.</p></div>';
+    el.note.textContent="Their project, stage by stage.";return;}
+  el.badge.textContent=f.badge; el.badge.style.background=""; el.badge.style.color="";
+  el.pipe.innerHTML=pipeHTML(f.st,f.st<0?(i===GIT.length-1?5:0):f.st);
+  el.work.innerHTML=f.html(); el.note.textContent=f.note;
+}});
+
+/* ---------- exit-ticket reveals ---------- */
+document.querySelectorAll("[data-reveal]").forEach(function(b){
+  b.addEventListener("click",function(){var a=document.getElementById(b.getAttribute("data-reveal"));a.hidden=!a.hidden;b.textContent=a.hidden?(b.textContent.indexOf("example")>-1?"Show an example":"Show answer"):"Hide";});
+});
+
+/* ---------- sections, keyboard, clicker ---------- */
+var ORDER=[].map.call(document.querySelectorAll("section[data-sec]"),function(s){return s.getAttribute("data-sec");});
+var railItems=document.querySelectorAll(".rail-item");
+var cur=ORDER[0];
+function showSection(id,fromEnd){
+  if(ORDER.indexOf(id)<0)return;
+  cur=id;
+  document.querySelectorAll("section[data-sec]").forEach(function(s){s.classList.toggle("show",s.getAttribute("data-sec")===id);});
+  railItems.forEach(function(b){b.classList.toggle("active",b.getAttribute("data-go")===id);});
+  if(STEPPERS[id]&&fromEnd===true)STEPPERS[id].go(STEPPERS[id].len-1);
+  window.scrollTo(0,0);
+  try{localStorage.setItem("die-board-sec",id);}catch(e){}
+  try{if(history.replaceState)history.replaceState(null,"","#"+id);}catch(e){}
+  document.getElementById("rail").classList.remove("open");
+}
+railItems.forEach(function(b){b.addEventListener("click",function(){showSection(b.getAttribute("data-go"));b.blur();});});
+document.getElementById("railToggle").addEventListener("click",function(){document.getElementById("rail").classList.toggle("open");});
+function advance(){var s=STEPPERS[cur];if(s&&!s.atEnd()){s.go(s.idx+1);return;}var k=ORDER.indexOf(cur);if(k<ORDER.length-1)showSection(ORDER[k+1]);}
+function retreat(){var s=STEPPERS[cur];if(s&&!s.atStart()){s.go(s.idx-1);return;}var k=ORDER.indexOf(cur);if(k>0)showSection(ORDER[k-1],true);}
+document.addEventListener("keydown",function(e){
+  if(e.altKey||e.ctrlKey||e.metaKey)return;
+  var tag=(e.target&&e.target.tagName)||"";
+  if(tag==="INPUT"||tag==="TEXTAREA")return;
+  var k=e.key;
+  if((tag==="BUTTON"||tag==="A")&&(k==="Enter"||k===" "))return;
+  if(k==="Enter"||k===" "||k==="ArrowRight"||k==="PageDown"){e.preventDefault();advance();}
+  else if(k==="ArrowLeft"||k==="Backspace"||k==="PageUp"){e.preventDefault();retreat();}
+  else if(k==="Home"){e.preventDefault();if(STEPPERS[cur])STEPPERS[cur].go(-1);}
+});
+var start=ORDER[0];
+var h=(location.hash||"").slice(1);
+var saved=null; try{saved=localStorage.getItem("die-board-sec");}catch(e){}
+if(h&&ORDER.indexOf(h)>-1)start=h; else if(saved&&ORDER.indexOf(saved)>-1)start=saved;
+showSection(start);
+})();
+</script>
