@@ -1,6 +1,6 @@
 # Data Is Everywhere: Finding the Story in the Numbers
 
-An interactive lesson on collecting, cleaning, analyzing and visualizing data, built around one real-world question: **why is the school Wi-Fi slow?**
+An interactive lesson on collecting, cleaning, analyzing and visualizing data, built around one real-world question: **Why is the school Wi-Fi slow?**
 
 Prepared by **Dr. Swarna Sethu**, Assistant Professor, Computer Information Science, Technology Department, Missouri Southern State University, for the Bentonville Schools Tech Club (Mission 1: Data).
 
