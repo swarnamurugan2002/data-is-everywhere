@@ -4,7 +4,7 @@ An interactive lesson on collecting, cleaning, analyzing and visualizing data, b
 
 Prepared by **Dr. Swarna Sethu**, Assistant Professor, Computer Information Science, Technology Department, Missouri Southern State University, for the Bentonville Schools Tech Club (Mission 1: Data).
 
-**Open the lesson board:** `https://<your-username>.github.io/data-is-everywhere/`
+**Open the lesson board:** https://swarnamurugan2002.github.io/data-is-everywhere/
 
 ## What's inside
 
