@@ -45,4 +45,4 @@ The cafeteria at noon averages 22 Mbps. Every other place and time is 68 or high
 
 ## Credits
 
-The lesson's real-world example is [BigBangData/Speedtest](https://github.com/BigBangData/Speedtest), a home Wi-Fi investigation published on GitHub. The board and handout show one small data file from that project, with credit; all rights to it remain with its author.
+The lesson's real-world example is [BigBangData/Speedtest](https://github.com/BigBangData/Speedtest), a home Wi-Fi investigation published on GitHub. The JSON file shown in the board and handout is our own made-up example in the same format as that project's data files; see their repository for the real runs.
