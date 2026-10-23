@@ -2,7 +2,7 @@
 
 An interactive lesson on collecting, cleaning, analyzing and visualizing data, built around one real-world question: **Why is the school Wi-Fi slow?**
 
-Prepared by **Dr. Swarna Sethu**, Assistant Professor, Computer Information Science, Technology Department, Missouri Southern State University, for the Bentonville Schools Tech4allClub (Mission 1: Data).
+Prepared by **Dr. Swarna Sethu**, Assistant Professor, Computer Information Science, Technology Department, Missouri Southern State University, for Tech4all, Bentonville Schools (Mission 1: Data).
 
 **Open the lesson board:** https://swarnamurugan2002.github.io/data-is-everywhere/
 
